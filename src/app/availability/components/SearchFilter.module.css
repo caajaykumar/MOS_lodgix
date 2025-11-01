@@ -1,0 +1,343 @@
+/* SearchFilter.module.css - CSS Module for Next.js */
+
+/* Main Container */
+.searchFilterWrapper {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px 15px;
+}
+
+.searchFilterContainer {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 50px;
+  padding: 8px 8px 8px 32px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+}
+
+.searchFilterContainer:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+}
+
+/* Filter Sections */
+.filterSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 32px;
+  transition: background-color 0.2s ease;
+  position: relative;
+  min-width: 0;
+}
+
+.filterSection:hover {
+  background-color: #f7f7f7;
+}
+
+.filterLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 4px;
+  display: block;
+}
+
+/* Date Input Styling */
+.dateInput {
+  border: none !important;
+  outline: none !important;
+  font-size: 14px;
+  color: #717171;
+  background: transparent !important;
+  cursor: pointer;
+  padding: 0 !important;
+  height: auto !important;
+  box-shadow: none !important;
+}
+
+/* Clear button shown inside each filter field */
+.clearBtn {
+  position: absolute;
+  right: 14px;
+  top: 20px;
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  border: 1px solid #d1d5db; 
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  padding: 0;
+  line-height: 1;
+  z-index: 10;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+
+.clearBtn:hover:not(:disabled) {
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.clearBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dateInput:focus {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Divider */
+.filterDivider {
+  width: 1px;
+  height: 32px;
+  background-color: #dddddd;
+  flex-shrink: 0;
+}
+
+/* Who Section */
+.whoSection {
+  min-width: 180px;
+}
+
+.guestDisplay {
+  font-size: 14px;
+  color: #717171;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.guestDisplay i {
+  font-size: 14px;
+  color: #717171;
+}
+
+/* Guest Dropdown */
+.guestDropdown {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  background: white;
+  border-radius: 32px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  padding: 24px 32px;
+  z-index: 1000;
+  min-width: 400px;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Guest Row */
+.guestRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #ebebeb;
+}
+
+.guestRow:last-child {
+  border-bottom: none;
+}
+
+.guestInfo {
+  flex: 1;
+}
+
+.guestType {
+  font-size: 16px;
+  font-weight: 600;
+  color: #222222;
+  margin-bottom: 4px;
+}
+
+.guestDescription {
+  font-size: 14px;
+  color: #717171;
+}
+
+.serviceLink {
+  color: #222222;
+  text-decoration: underline;
+  font-size: 14px;
+}
+
+.serviceLink:hover {
+  color: #000000;
+}
+
+/* Guest Counter */
+.guestCounter {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.counterBtn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 50% !important;
+  border: 1px solid #b0b0b0 !important;
+  background: white !important;
+  color: #717171 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease;
+  min-width: 32px;
+}
+
+.counterBtn span {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.counterBtn:hover:not(:disabled) {
+  border-color: #222222 !important;
+  color: #222222 !important;
+  transform: scale(1.05);
+  background: white !important;
+  box-shadow: none !important;
+}
+
+.counterBtn:active:not(:disabled) {
+  transform: scale(0.98);
+  box-shadow: none !important;
+}
+
+.counterBtn:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.counterBtn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.counterBtn:disabled:hover {
+  transform: none;
+}
+
+.counterValue {
+  font-size: 16px;
+  color: #222222;
+  min-width: 20px;
+  text-align: center;
+  font-weight: 400;
+}
+
+/* Search Button */
+.btnSearch {
+  background: linear-gradient(135deg, #ffb606 0%, #ffa500 50%, #ff8c00 100%) !important;
+  /* background: linear-gradient(135deg, #ffb606 0%, #ffcb2b 50%, #ffd65c 100%) !important; */
+  /* background: linear-gradient(135deg, #e61e4d 0%, #e31c5f 50%, #d70466 100%) !important; */
+  color: white !important;
+  border: none !important;
+  border-radius: 24px !important;
+  padding: 12px 24px !important;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px;
+  transition: transform 0.2s ease;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.btnSearch:hover,
+.btnSearch:focus,
+.btnSearch:active {
+  transform: scale(1.04);
+  background: linear-gradient(135deg, #ffb606 0%, #ffa500 50%, #ff8c00 100%) !important;
+  /* background: linear-gradient(135deg, #d01943 0%, #cc1855 50%, #c00460 100%) !important; */
+  color: white !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.btnSearch span:first-child {
+  font-size: 14px;
+}
+
+.searchText {
+  display: inline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .searchFilterContainer {
+    flex-direction: column;
+    border-radius: 24px;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .filterDivider {
+    display: none;
+  }
+
+  .filterSection {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .whoSection {
+    width: 100%;
+    min-width: auto;
+  }
+
+  .btnSearch {
+    width: 100%;
+    justify-content: center !important;
+    margin-left: 0;
+  }
+
+  .guestDropdown {
+    right: -16px;
+    left: -16px;
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .guestDropdown {
+    padding: 20px;
+  }
+
+  .guestCounter {
+    gap: 12px;
+  }
+
+  .counterBtn {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px;
+  }
+}

@@ -1,0 +1,5 @@
+# Lodgix API Configuration
+
+NEXT_PUBLIC_LODGIX_API_KEY=28d48fd2a662938549d0349809de9f775789bab8d9b2eedf95ffd3d90cccf37e
+# Optional: Override the API URL if needed
+# NEXT_PUBLIC_LODGIX_API_URL=https://www.lodgix.com/public-api/v2
