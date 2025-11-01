@@ -2,6 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg: #F8F9FA;
+  --card: #FFFFFF;
+  --text: #222222;
+  --muted: #717171;
+  --border: #DDDDDD;
+  --accent: #6366F1;
+  --accent-600: #4F46E5;
+  --accent-700: #4338CA;
+  --accent-50: #EEF2FF;
+  --secondary: #00A699;
+  --success: #00A699;
+  --error: #E31C5F;
+}
+
 /* @import url("https://fonts.googleapis.com/css?family=Lato:300,400,400i,700,700i,900|Montserrat:200,300,400,400i,500,500i,600,700,800,900|Open+Sans:300,400,400i,600,600i,700,800|PT+Sans:400,400i,700,700i|Poppins:300,400,500,600,700"); */
 /* @import '@fortawesome/fontawesome-free/css/all.min.css'; */
 

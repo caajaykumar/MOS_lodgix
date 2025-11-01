@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Breadcrumb from "@/app/components/Breadcrumb/Breadcrumb";
 import styles from "@/app/checkout/checkout.module.css";
 
-export default function BookingConfirmationPage() {
+function BookingConfirmationPageInner() {
   const sp = useSearchParams();
   const reservationId = sp.get("reservation_id") || "";
   const [data, setData] = useState({ reservation: null, guest: null, quote: null });
@@ -227,5 +227,13 @@ export default function BookingConfirmationPage() {
 
       {/* Payment handled on dedicated /payment page */}
     </div>
+  );
+}
+
+export default function BookingConfirmationPage() {
+  return (
+    <Suspense fallback={<div className={styles.pageWrap}><p>Loading confirmation...</p></div>}>
+      <BookingConfirmationPageInner />
+    </Suspense>
   );
 }

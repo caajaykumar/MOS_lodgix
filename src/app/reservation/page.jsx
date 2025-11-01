@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import ReservationForm from './components/ReservationForm';
 import Breadcrumb from '@/app/components/Breadcrumb/Breadcrumb';
 
@@ -22,7 +23,9 @@ export default function ReservationPage() {
                 <h3 className="panel-title">Complete Your Reservation</h3>
               </div>
               <div className="panel-body">
-                <ReservationForm />
+                <Suspense fallback={<div>Loading reservation form…</div>}>
+                  <ReservationForm />
+                </Suspense>
               </div>
             </div>
           </div>

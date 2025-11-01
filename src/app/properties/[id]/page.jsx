@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { Suspense, useEffect, useState, useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination, Thumbs, FreeMode, Zoom } from 'swiper/modules';
 import Image from 'next/image';
@@ -51,7 +51,7 @@ const AMENITIES = [
 ];
 
 
-const PropertyDetails = () => {
+const PropertyDetailsInner = () => {
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -903,4 +903,17 @@ const PropertyDetails = () => {
   );
 }
 
-export default PropertyDetails;
+export default function PropertyDetails() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+        <div className="text-center">
+          <div className="text-xl font-semibold text-gray-700 mb-2">Loading property details...</div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        </div>
+      </div>
+    }>
+      <PropertyDetailsInner />
+    </Suspense>
+  );
+}

@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Breadcrumb from '@/app/components/Breadcrumb/Breadcrumb';
 
-export default function BookingPage() {
+function BookingPageInner() {
   const sp = useSearchParams();
   const router = useRouter();
   const initial = useMemo(() => ({
@@ -466,5 +466,13 @@ export default function BookingPage() {
       </div>
     )}
     </>
+  );
+}
+
+export default function BookingPage() {
+  return (
+    <Suspense fallback={<div className="container max-w-5xl mx-auto p-6"><p>Loading…</p></div>}>
+      <BookingPageInner />
+    </Suspense>
   );
 }

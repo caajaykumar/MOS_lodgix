@@ -1,9 +1,9 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
-export default function PaymentPage() {
+function PaymentPageInner() {
   const sp = useSearchParams();
   const router = useRouter();
   const reservationId = sp.get("reservation_id") || "";
@@ -229,5 +229,13 @@ export default function PaymentPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<div style={{ maxWidth: 720, margin: "40px auto", padding: 20 }}><p>Loading payment form...</p></div>}>
+      <PaymentPageInner />
+    </Suspense>
   );
 }

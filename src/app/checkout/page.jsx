@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { Suspense, useEffect, useMemo, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./checkout.module.css";
 import BookingSummary from "@/app/components/BookingSummary";
@@ -12,7 +12,7 @@ import { useLoader } from "@/app/components/LoaderProvider";
 import Background from "@/app/components/UI/Background";
 import { calculatePetFee } from "@/utils/calculatePetFee";
 
-export default function CheckoutPage() {
+function CheckoutPageInner() {
   const { hideLoader } = useLoader();
   const sp = useSearchParams();
   const router = useRouter();
@@ -475,5 +475,13 @@ export default function CheckoutPage() {
 
       {/* Payment handled on dedicated page */}
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className={styles.pageWrap}><p>Loading checkout...</p></div>}>
+      <CheckoutPageInner />
+    </Suspense>
   );
 }

@@ -31,3 +31,4 @@ out/
 
 # Optional: if you use testing tools
 coverage/
+.vercel
