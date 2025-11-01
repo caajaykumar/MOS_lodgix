@@ -1,4 +1,4 @@
-:root{
+:global(:root){
   --bg: #F8F9FA;
   --card: #FFFFFF;
   --text: #222222;

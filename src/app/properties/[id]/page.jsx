@@ -33,8 +33,8 @@ import {
   FaTimes,
   FaExpand
 } from 'react-icons/fa';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
+import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/dist/style.css';
 import Breadcrumb from '../../components/Breadcrumb/Breadcrumb';
 import styles from './propertyDetails.module.css';
 import PopupGallery from './PopupGallery';
@@ -80,6 +80,9 @@ const PropertyDetails = () => {
   const [quoteError, setQuoteError] = useState(null);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [imagesReady, setImagesReady] = useState(false);
+  const dateWrapRef = useRef(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [activeField, setActiveField] = useState('checkin'); // 'checkin' | 'checkout'
 
   const { id } = useParams();
   const router = useRouter();
@@ -101,6 +104,21 @@ const PropertyDetails = () => {
       setShowBookingForm(true);
     }
   }, [searchParams]);
+
+  // Close date popover on outside click / ESC
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (!pickerOpen) return;
+      if (dateWrapRef.current && !dateWrapRef.current.contains(e.target)) setPickerOpen(false);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') setPickerOpen(false); };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [pickerOpen]);
   
   // Helpers
   const nightlyRate = property?.price_per_night ?? property?.nightly_rate_min ?? 0;
@@ -668,62 +686,59 @@ const PropertyDetails = () => {
                   </div>
                 )}
 
-                <div className={styles.selectorCard}>
+                <div className={styles.selectorCard} ref={dateWrapRef}>
                   <div className={styles.selectorGrid}>
                     <div className={`${styles.selectorCell} ${styles.cellDivider}`}>
                       <div className={styles.cellLabel}>CHECK-IN</div>
-                      <DatePicker
-                        selected={bookingData.checkIn}
-                        onChange={(date) => setBookingData(prev => {
-                          const next = { ...prev, checkIn: date };
-                          // If checkout is before new checkin, reset checkout
-                          if (next.checkOut && date && next.checkOut < date) next.checkOut = null;
-                          return next;
-                        })}
-                        selectsStart
-                        startDate={bookingData.checkIn}
-                        endDate={bookingData.checkOut}
-                        minDate={new Date()}
-                        placeholderText="Add date"
+                      <input
+                        type="text"
+                        readOnly
                         className={styles.dateInput}
-                        dateFormat="MM/dd/yyyy"
-                        showMonthDropdown
-                        showYearDropdown
-                        dropdownMode="select"
-                        todayButton="Today"
-                        isClearable
-                        shouldCloseOnSelect={false}
-                        popperPlacement="bottom-start"
+                        value={bookingData.checkIn ? new Date(bookingData.checkIn).toLocaleDateString() : ''}
+                        placeholder="Add date"
+                        onClick={() => { setActiveField('checkin'); setPickerOpen(true); }}
                       />
                     </div>
                     <div className={styles.selectorCell}>
                       <div className={styles.cellLabel}>CHECKOUT</div>
-                      <DatePicker
-                        selected={bookingData.checkOut}
-                        onChange={(date) => setBookingData(prev => ({ ...prev, checkOut: date }))}
-                        selectsEnd
-                        startDate={bookingData.checkIn}
-                        endDate={bookingData.checkOut}
-                        minDate={bookingData.checkIn || new Date()}
-                        placeholderText="Add date"
+                      <input
+                        type="text"
+                        readOnly
                         className={styles.dateInput}
-                        dateFormat="MM/dd/yyyy"
-                        showMonthDropdown
-                        showYearDropdown
-                        dropdownMode="select"
-                        todayButton="Today"
-                        isClearable
-                        shouldCloseOnSelect={true}
-                        popperPlacement="bottom-start"
+                        value={bookingData.checkOut ? new Date(bookingData.checkOut).toLocaleDateString() : ''}
+                        placeholder="Add date"
+                        onClick={() => { setActiveField('checkout'); setPickerOpen(true); }}
                       />
                     </div>
                   </div>
-                  <div className={styles.guestRow}>
-                    <GuestSelector
-                      value={{ adults: bookingData.adults, children: bookingData.children, infants: bookingData.infants, pets: bookingData.pets }}
-                      onChange={(v) => setBookingData(prev => ({ ...prev, adults: v.adults, children: v.children, infants: v.infants, pets: v.pets }))}
-                    />
-                  </div>
+                  {pickerOpen && (
+                    <div className="pd-popover">
+                      <DayPicker
+                        mode="range"
+                        numberOfMonths={1}
+                        selected={{ from: bookingData.checkIn || undefined, to: bookingData.checkOut || undefined }}
+                        defaultMonth={activeField === 'checkout' ? (bookingData.checkOut || bookingData.checkIn || new Date()) : (bookingData.checkIn || new Date())}
+                        onSelect={(r) => {
+                          const from = r?.from ? new Date(r.from) : null;
+                          const to = r?.to ? new Date(r.to) : null;
+                          setBookingData(prev => ({ ...prev, checkIn: from, checkOut: to }));
+                          if (from && to) setPickerOpen(false);
+                        }}
+                        disabled={{ before: new Date(new Date().toDateString()) }}
+                      />
+                      <div className="pd-popover-actions">
+                        <button type="button" className="btn btn-default btn-xs" onClick={() => setBookingData(prev => ({ ...prev, checkIn: null, checkOut: null }))}>Clear</button>
+                        <button type="button" className="btn btn-primary btn-xs" onClick={() => setPickerOpen(false)}>Done</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className={styles.guestRow}>
+                  <GuestSelector
+                    value={{ adults: bookingData.adults, children: bookingData.children, infants: bookingData.infants, pets: bookingData.pets }}
+                    onChange={(v) => setBookingData(prev => ({ ...prev, adults: v.adults, children: v.children, infants: v.infants, pets: v.pets }))}
+                  />
                 </div>
 
                 <div className="mt-4">

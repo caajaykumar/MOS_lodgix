@@ -3,10 +3,10 @@
 import React from 'react';
 import Link from 'next/link';
 
-const Breadcrumb = ({ title, breadcrumbs, items = breadcrumbs }) => {
+const Breadcrumb = ({ title, breadcrumbs, items = breadcrumbs, fluid = false }) => {
   return (
     <section className="banner_area">
-      <div className="container">
+      <div className={fluid ? 'container-fluid' : 'container'}>
         <div className="banner_inner_content">
           <h1>{title}</h1>
           <ul>

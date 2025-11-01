@@ -2,16 +2,15 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import styles from "./checkout.module.css";
 import BookingSummary from "@/app/components/BookingSummary";
 import GuestDetailsForm from "@/app/components/GuestDetailsForm";
 import BillingAddressForm from "@/app/components/BillingAddressForm";
 import Breadcrumb from "@/app/components/Breadcrumb/Breadcrumb";
-import { isEmail, minAge, requiredFields, emailMatches } from "@/utils/validation";
+import { isEmail, requiredFields, emailMatches } from "@/utils/validation";
 import { useLoader } from "@/app/components/LoaderProvider";
 import Background from "@/app/components/UI/Background";
+import { calculatePetFee } from "@/utils/calculatePetFee";
 
 export default function CheckoutPage() {
   const { hideLoader } = useLoader();
@@ -40,7 +39,7 @@ export default function CheckoutPage() {
     last_name: "",
     email: "",
     confirm_email: "",
-    dob: "",
+    age: "",
     phone: "",
   });
 
@@ -53,10 +52,7 @@ export default function CheckoutPage() {
     country: "India",
   });
 
-  const [misc, setMisc] = useState({
-    special_requests: "",
-    show_mobile: "",
-  });
+  // Miscellaneous section removed per requirements
 
   const [agree, setAgree] = useState({ rental: false });
   const [discountCode, setDiscountCode] = useState("");
@@ -171,22 +167,16 @@ export default function CheckoutPage() {
     // Nightly charge from API (base for room rate)
     const nightlyCharge = Number(quote?.reservation_net ?? quote?.base_rate ?? quote?.discounted_rent_rental_charges ?? quote?.net ?? 0);
     const cleaningFee = Number(quote?.fees ?? quote?.total_fees ?? quote?.fees_net ?? 0);
-    // Derive pet fee similar to BookingSummary
-    let petFee = 0;
-    if (Number(initial.pets) > 0) {
-      petFee = Number(quote?.computedPetFee || 0) || 0;
-      if (!petFee) {
-        try {
-          const raw = quote?.fee_items || quote?.fees_items || quote?.fees_breakdown || [];
-          const list = Array.isArray(raw) ? raw : Object.values(raw || {});
-          for (const f of list) {
-            const title = (f?.title || f?.name || '').toLowerCase();
-            const amount = Number(f?.value || f?.amount || 0) || 0;
-            if (title.includes('pet')) { petFee = amount; break; }
-          }
-        } catch {}
-      }
-    }
+    // Compute nights locally
+    let nights = 0;
+    try {
+      const d1 = new Date(criteria.from_date);
+      const d2 = new Date(criteria.to_date);
+      const ms = d2.setHours(0,0,0,0) - d1.setHours(0,0,0,0);
+      nights = Math.max(0, Math.round(ms / (1000 * 60 * 60 * 24)));
+    } catch {}
+    // Pet fee per business rules
+    const petFee = Number(criteria.pets) > 0 ? (calculatePetFee(nights, Number(criteria.pets)) || 0) : 0;
     // Robust discount parse (totals, arrays, and string fields)
     const toNum = (v) => {
       if (v == null) return 0;
@@ -249,7 +239,7 @@ export default function CheckoutPage() {
       first_name: guest.first_name,
       last_name: guest.last_name,
       email: guest.email,
-      dob: guest.dob,
+      age: guest.age,
       address1: billing.address1,
       city: billing.city,
       state: billing.state,
@@ -260,7 +250,7 @@ export default function CheckoutPage() {
       "first_name",
       "last_name",
       "email",
-      "dob",
+      "age",
       "address1",
       "city",
       "state",
@@ -270,9 +260,10 @@ export default function CheckoutPage() {
     if (missing.length) return `Please fill required fields: ${missing.join(", ")}`;
     if (!isEmail(guest.email)) return "Invalid email format";
     if (!emailMatches(guest.email, guest.confirm_email)) return "Emails do not match";
-    if (!minAge(guest.dob, 25)) return "Guest must be at least 25 years old";
+    if (!(Number(guest.age) >= 21)) return "Guest must be at least 21 years old";
     if (!agree.rental) return "You must accept the rental agreement";
     if (!criteria.property_id || !criteria.from_date || !criteria.to_date) return "Dates and property are required";
+    if (Number(criteria.pets) > 2) return "Maximum 2 pets allowed";
     return "";
   };
 
@@ -369,7 +360,7 @@ export default function CheckoutPage() {
         stay_type: "GUEST",
         entities: [{ property_id: Number(criteria.property_id) || 0, room_ids: [] }],
         discount_code: discountCode || undefined,
-        special_requests: misc.special_requests || "",
+        special_requests: "",
       };
       const rResp = await fetch("/api/reservations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(reservationPayload) });
       const rData = await rResp.json().catch(() => ({}));
@@ -408,6 +399,7 @@ export default function CheckoutPage() {
           { name: 'Booking', link: '/booking', active: false },
           { name: 'Checkout', link: '#', active: true },
         ]}
+        fluid={false}
       />
       <div className={styles.content}>
         <div className={styles.mainCol}>
@@ -434,19 +426,7 @@ export default function CheckoutPage() {
               </div>
             </details>
 
-            <details>
-              <summary className={styles.sectionTitle}>Miscellaneous</summary>
-              <div className={styles.sectionBody}>
-                <div className={styles.formRow}>
-                  <label>Mobile Number</label>
-                  <input className={styles.input} value={misc.show_mobile} onChange={(e) => setMisc((m) => ({ ...m, show_mobile: e.target.value }))} />
-                </div>
-                <div className={styles.formRow}>
-                  <label>Special Requests</label>
-                  <textarea className={styles.textarea} rows={3} value={misc.special_requests} onChange={(e) => setMisc((m) => ({ ...m, special_requests: e.target.value }))} />
-                </div>
-              </div>
-            </details>
+            {/* Miscellaneous section removed per requirements */}
 
             <div className={styles.termsBox}>
               <label className={styles.checkbox}> 

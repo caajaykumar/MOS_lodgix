@@ -3,6 +3,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLoader } from '@/app/components/LoaderProvider';
+import AnimatedEmptyIllustration from './AnimatedEmptyIllustration';
+import btnStyles from './PropertyCardButtons.module.css';
 
 export default function ResultsGrid({
   properties = [],
@@ -10,7 +12,10 @@ export default function ResultsGrid({
   error = null,
   searchCriteria = {},
   pagination = null,
+  hasSearched = false,
+  onReset = () => {},
 }) {
+
   const { showLoader, hideLoader } = useLoader();
   const [bookingId, setBookingId] = useState(null);
   const [bookingError, setBookingError] = useState(null);
@@ -33,6 +38,14 @@ export default function ResultsGrid({
     const n = Number(v);
     if (!isFinite(n)) return '$0.00';
     return n.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+  };
+
+  // Safely parse values that may include currency symbols/commas
+  const toNum = (v) => {
+    if (v == null) return 0;
+    const s = String(v).replace(/[^0-9.\-]/g, '');
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
   };
 
   // Debug: log key details for each property (once per update)
@@ -71,6 +84,46 @@ export default function ResultsGrid({
     } catch {}
   }, [searchCriteria]);
 
+  // Modern inline icons (avoid extra deps)
+  const BedIcon = ({ size=22, color='#6B7280' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M3 10h18a2 2 0 0 1 2 2v6h-2v-2H3v2H1v-6a2 2 0 0 1 2-2Zm2 0V7a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3H5Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+  const ShowerIcon = ({ size=22, color='#6B7280' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M7 4h7a5 5 0 0 1 5 5v1" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M4 20V6a2 2 0 0 1 2-2h1" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <circle cx="17" cy="14" r="1" fill={color}/>
+      <circle cx="14" cy="16" r="1" fill={color}/>
+      <circle cx="20" cy="16" r="1" fill={color}/>
+      <circle cx="17" cy="18" r="1" fill={color}/>
+      <circle cx="14" cy="20" r="1" fill={color}/>
+      <circle cx="20" cy="20" r="1" fill={color}/>
+    </svg>
+  );
+  const UsersIcon = ({ size=22, color='#6B7280' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <circle cx="9.5" cy="7" r="3.5" stroke={color} strokeWidth="2"/>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M17 3.34A3.5 3.5 0 0 1 19.5 7c0 1.16-.55 2.19-1.4 2.84" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+    </svg>
+  );
+  const EyeIcon = ({ size=18, color='#1d4ed8' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="2"/>
+    </svg>
+  );
+  const CalendarCheckIcon = ({ size=20, color='currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      <rect x="3" y="4" width="18" height="17" rx="2" stroke={color} strokeWidth="2" fill="none"/>
+      <path d="M16 2v4M8 2v4M3 10h18" stroke={color} strokeWidth="2" strokeLinecap="round"/>
+      <path d="M10 16l2 2 4-4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+
   // Lazy card component with IntersectionObserver to defer offscreen rendering
   function PropertyCard({ property, index }) {
     const [inView, setInView] = useState(index < 6); // prime first row or two
@@ -108,10 +161,26 @@ export default function ResultsGrid({
     const imgSrc = property.photo_url || property.photoUrl || '/img/placeholder-property.svg';
     const blur = property.blur_photo_url || undefined;
     const isPriority = index < 2; // preload only first two
+    const detailsUrl = `/properties/${property.id}?checkIn=${criteria.from_date || searchCriteria.from_date}&checkOut=${criteria.to_date || searchCriteria.to_date}&guests=${criteria.guests || searchCriteria.guests || 2}`;
+    const maxGuests = Number(property.sleeps || property.max_guests || 0) || 0;
+    const isAvailable = Boolean(
+      (property && (property.available === true || property.is_available === true)) ||
+      (typeof property?.status === 'string' && property.status.toLowerCase() === 'available')
+    );
+
+    const onCardClick = () => { try { window.location.href = detailsUrl; } catch (_) {} };
+
     return (
       <div className="col-md-4 col-sm-6" style={{ marginBottom: '30px' }}>
-        <div className="panel panel-default" style={{ height: '100%' }}>
-          <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
+        <div
+          className="card-modern"
+          role="link"
+          tabIndex={0}
+          aria-label={`View details for ${property.name || 'Property'}`}
+          onClick={onCardClick}
+          onKeyDown={(e)=>{ if (e.key === 'Enter') onCardClick(); }}
+        >
+          <div className="cm-image">
             <Image
               src={imgSrc}
               alt={property.name || `Property ${property.id}`}
@@ -124,77 +193,69 @@ export default function ResultsGrid({
               placeholder={blur ? 'blur' : undefined}
               blurDataURL={blur}
             />
-            <div style={{ position: 'absolute', top: '10px', right: '10px' }}>
-              <span className="label label-success">Available</span>
-            </div>
-            {property.sleeps && (
-              <div style={{ position: 'absolute', bottom: '10px', left: '10px', backgroundColor: 'rgba(0,0,0,0.7)', color: 'white', padding: '5px 10px', borderRadius: '3px', fontSize: '12px' }}>
-                <span className="glyphicon glyphicon-user" style={{ marginRight: '5px' }}></span>
-                Sleeps {property.sleeps}
-              </div>
-            )}
+            {isAvailable && <div className="cm-available">Available</div>}
           </div>
 
-          <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100% - 200px)' }}>
-            <div className="row">
-              <div className="col-xs-12">
-                <h4 style={{ margin: '0 0 8px 0', fontSize: '15px', fontWeight: 'bold' }}>
-                  {property.name || `Property ${property.id}`}
-                </h4>
-              </div>
-              <div className="col-xs-12 text-right">
-                {property.nightly_rate && (
-                  <div style={{ color: '#337ab7', fontWeight: 'bold', fontSize: '16px' }}>
-                    ${property.nightly_rate.toLocaleString()}
-                    <small style={{ color: '#777', fontWeight: 'normal', display: 'block' }}>per night</small>
-                  </div>
-                )}
-              </div>
+          <div className="cm-body">
+            <div className="cm-title-row">
+              <Link href={detailsUrl} className="cm-title" onClick={(e)=> e.stopPropagation()}>
+                {property.name || `Property ${property.id}`}
+              </Link>
+              {property.nightly_rate && (
+                <div className="cm-price">
+                  ${property.nightly_rate.toLocaleString()}
+                  <small>per night</small>
+                </div>
+              )}
             </div>
 
-            <div style={{ margin: '10px 0', flex: 1 }}>
-              <div className="row">
-                {property.bedrooms && (
-                  <div className="col-xs-4 text-center">
-                    <span className="glyphicon glyphicon-bed" style={{ marginRight: '3px' }}></span>
-                    <small>{property.bedrooms} bed{property.bedrooms !== 1 ? 's' : ''}</small>
-                  </div>
-                )}
-                {property.bathrooms && (
-                  <div className="col-xs-4 text-center">
-                    <span className="glyphicon glyphicon-tint" style={{ marginRight: '3px' }}></span>
-                    <small>{property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''}</small>
-                  </div>
-                )}
-                {property.sleeps && (
-                  <div className="col-xs-4 text-center">
-                    <span className="glyphicon glyphicon-user" style={{ marginRight: '3px' }}></span>
-                    <small>{property.sleeps} guests</small>
-                  </div>
-                )}
-              </div>
+            <div className="cm-icons">
+              {property.bedrooms ? (
+                <div className="cm-icon-item"><BedIcon /><span>{property.bedrooms} bed{property.bedrooms !== 1 ? 's' : ''}</span></div>
+              ) : null}
+              {property.bathrooms ? (
+                <div className="cm-icon-item"><ShowerIcon /><span>{property.bathrooms} bath{property.bathrooms !== 1 ? 's' : ''}</span></div>
+              ) : null}
+              {maxGuests ? (
+                <div className="cm-icon-item"><UsersIcon /><span>Max: {maxGuests}</span></div>
+              ) : null}
             </div>
 
-            <div className="row" style={{ marginTop: 'auto' }}>
-              <div className="col-xs-6 ">
-                <div className="btn-group">
-                  <Link
-                    href={`/properties/${property.id}?checkIn=${criteria.from_date || searchCriteria.from_date}&checkOut=${criteria.to_date || searchCriteria.to_date}&guests=${criteria.guests || searchCriteria.guests || 2}`}
-                    className="btn btn-default btn-xs"
-                  >
-                    View Details 
-                  </Link>
-                </div>
-              </div>
-              <div className="col-xs-6 text-right">
-                <div className="btn-group">
-                  <button className="btn btn-primary btn-xs" onClick={() => handleBookNow(property)} disabled={bookingLoading && bookingId === property.id}>
-                    {bookingLoading && bookingId === property.id ? 'Loading…' : 'Book Now'}
-                  </button>
-                </div>
-              </div>
+            <div className={btnStyles.buttonContainer}>
+              <Link href={detailsUrl} className={btnStyles.btnSecondary} onClick={(e)=> e.stopPropagation()}>
+                <span className={btnStyles.btnIcon}><EyeIcon size={20} color="#1d4ed8" /></span>
+                <span>View Details</span>
+              </Link>
+              <button
+                className={btnStyles.btnPrimary}
+                onClick={(e)=>{ e.stopPropagation(); handleBookNow(property); }}
+                disabled={bookingLoading && bookingId === property.id}
+              >
+                <span className={btnStyles.btnIcon}><CalendarCheckIcon /></span>
+                <span>{bookingLoading && bookingId === property.id ? 'Loading…' : 'Book Now'}</span>
+              </button>
             </div>
           </div>
+
+          <style jsx>{`
+            .card-modern { background:#fff; border:0.5px solid #ddd; border-radius:16px; overflow:hidden; box-shadow:0 4px 12px rgba(0,0,0,.04); transition: transform .35s cubic-bezier(.4,0,.2,1), box-shadow .35s, border-color .35s; cursor:pointer; }
+            .card-modern:hover { transform: translateY(-8px) scale(1.01); box-shadow:0 20px 40px rgba(59,130,246,.18); border-color:#dbeafe; }
+            .cm-image { position:relative; height:200px; overflow:hidden; }
+            .cm-image :global(img) { transition: transform .8s ease; }
+            .card-modern:hover .cm-image :global(img) { transform: scale(1.08); }
+            .cm-available { position:absolute; top:12px; right:12px; padding:6px 10px; border-radius:12px; font-weight:600; font-size:12px; color:#065f46; background:#dff0d8; border:1px solid #cbe8c3; box-shadow:0 4px 12px rgba(0,0,0,.08); }
+            .cm-body { padding:16px; display:flex; flex-direction:column; gap:14px; }
+            .cm-title-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+            .cm-title { font-size:18px; font-weight:600; color:#1F2937; text-decoration:none; transition: color .25s, text-decoration-color .25s; }
+            .cm-title:hover { color:#3B82F6; text-decoration:underline; text-decoration-color:#93c5fd; }
+            .cm-price { color:#2563eb; font-weight:700; font-size:16px; text-align:right; }
+            .cm-price small { display:block; color:#6b7280; font-weight:500; margin-top:2px; }
+            .cm-icons { display:flex; align-items:center; gap:18px; color:#6B7280; }
+            .cm-icon-item { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:500; }
+            .cm-icon-item:hover { color:#374151; }
+            /* Button styles now provided via PropertyCardButtons.module.css */
+            @media (max-width: 767px) { .cm-image { height: 180px; } .cm-body { padding:14px } }
+          `}</style>
         </div>
       </div>
     );
@@ -323,15 +384,42 @@ export default function ResultsGrid({
 
   // Empty results
   if (!properties || properties.length === 0) {
+    if (!hasSearched) {
+      return (
+        <div className="row">
+          <div className="col-md-12">
+            <div className="text-center" style={{ padding: '8px 12px' }}>
+              <div style={{ marginBottom: 6, display: 'inline-block' }}>
+                <AnimatedEmptyIllustration size={190} />
+              </div>
+              <h3 style={{ marginBottom: 4 }}>Start Your Perfect Vacation</h3>
+              <p className="text-muted" style={{ fontSize: '13px', marginBottom: 0 }}>
+                Enter your dates and guest count to discover available properties
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
     return (
       <div className="row">
         <div className="col-md-12">
-          <div className="text-center" style={{ padding: '50px 20px' }}>
-            <div style={{ fontSize: '48px', color: '#ccc', marginBottom: '20px' }}>🏠</div>
-            <h3>No Properties Available</h3>
-            <p className="text-muted" style={{ fontSize: '16px', marginBottom: '20px' }}>
-              No properties are available for your selected dates and criteria.
+          <div className="text-center" style={{ padding: '60px 20px' }}>
+            <div style={{ fontSize: '48px', color: '#d1d5db', marginBottom: '16px' }}>🔎</div>
+            <h3 style={{ marginBottom: 8 }}>No Properties Found</h3>
+            <p className="text-muted" style={{ fontSize: '16px', marginBottom: '18px' }}>
+              We couldn't find properties matching your search. Try adjusting your dates or guest count.
             </p>
+            <ul style={{ listStyle: 'disc', display: 'inline-block', textAlign: 'left', color: '#6b7280', marginBottom: 16 }}>
+              <li>Try different check-in/check-out dates</li>
+              <li>Reduce the number of guests</li>
+              <li>Clear filters and search again</li>
+            </ul>
+            <div style={{ marginTop: 8 }}>
+              <button className="btn btn-default" onClick={onReset}>
+                Clear Search
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -447,7 +535,7 @@ export default function ResultsGrid({
                   let discount = 0; 
                   try {
                     const directTotals = [quote?.discounts_total, quote?.discount_total, quote?.total_discount];
-                    for (const v of directTotals) { if (v != null) { discount = Math.abs(Number(v) || 0); break; } }
+                    for (const v of directTotals) { if (v != null) { discount = Math.abs(toNum(v)); break; } }
                     if (!discount) {
                       const candidates = [quote?.discounts, quote?.applied_discounts, quote?.discount_items, quote?.details?.discounts, quote?.pricing?.discounts];
                       for (const arr of candidates) {
@@ -455,7 +543,7 @@ export default function ResultsGrid({
                         if (list.length) {
                           let totalDiscountAmount = 0;
                           for (const d of list) {
-                            const val = Number(d?.value ?? d?.amount ?? d?.net ?? d?.total ?? 0) || 0;
+                            const val = toNum(d?.value ?? d?.amount ?? d?.net ?? d?.total ?? 0);
                             if (val > 0) {
                               // If value is between 1-100, treat as percentage of nightly charge
                               if (val > 1 && val <= 100) {
@@ -474,12 +562,10 @@ export default function ResultsGrid({
                       }
                     }
                     if (!discount && quote?.discounts != null) {
-                      const s = String(quote.discounts).replace(/[^0-9.\-]/g, '');
-                      const n = parseFloat(s);
-                      if (Number.isFinite(n)) discount = Math.abs(n);
+                      discount = Math.abs(toNum(quote.discounts));
                     }
-                    if (!discount) discount = Math.abs(Number(quote?.discount || 0)) || 0;
-                  } catch { discount = Math.abs(Number(quote?.discount || 0)) || 0; }
+                    if (!discount) discount = Math.abs(toNum(quote?.discount || 0)) || 0;
+                  } catch { discount = Math.abs(toNum(quote?.discount || 0)) || 0; }
                   const subtotal = nightlyCharge + estimatedCleaning + petFeeTotal - discount;
                   // Taxes based on Nightly + Cleaning only
                   const taxBase = nightlyCharge + estimatedCleaning;
@@ -516,7 +602,7 @@ export default function ResultsGrid({
                         let d = 0; 
                         try {
                           const directTotals = [quote?.discounts_total, quote?.discount_total, quote?.total_discount];
-                          for (const v of directTotals) { if (v != null) { d = Math.abs(Number(v) || 0); break; } }
+                          for (const v of directTotals) { if (v != null) { d = Math.abs(toNum(v)); break; } }
                           if (!d) {
                             const candidates = [quote?.discounts, quote?.applied_discounts, quote?.discount_items, quote?.details?.discounts, quote?.pricing?.discounts];
                             for (const arr of candidates) {
@@ -524,7 +610,7 @@ export default function ResultsGrid({
                               if (list.length) {
                                 let totalDiscountAmount = 0;
                                 for (const disc of list) {
-                                  const val = Number(disc?.value ?? disc?.amount ?? disc?.net ?? disc?.total ?? 0) || 0;
+                                  const val = toNum(disc?.value ?? disc?.amount ?? disc?.net ?? disc?.total ?? 0);
                                   if (val > 0) {
                                     const nightlyForDiscount = Number(quote.reservation_net ?? quote.base_rate ?? quote.net ?? 0) || 0;
                                     // If value is between 1-100, treat as percentage of nightly charge
@@ -544,11 +630,9 @@ export default function ResultsGrid({
                             }
                           }
                           if (!d && quote?.discounts != null) {
-                            const s = String(quote.discounts).replace(/[^0-9.\-]/g, '');
-                            const n = parseFloat(s);
-                            if (Number.isFinite(n)) d = Math.abs(n);
+                            d = Math.abs(toNum(quote.discounts));
                           }
-                          if (!d) d = Math.abs(Number(quote?.discount || 0)) || 0;
+                          if (!d) d = Math.abs(toNum(quote?.discount || 0)) || 0;
                         } catch {}
                         return d > 0 ? (
                           <div className="row" style={{ marginBottom: 6 }}>

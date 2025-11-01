@@ -2,12 +2,12 @@
 
 import { useMemo } from "react";
 import styles from "@/app/checkout/checkout.module.css";
-import { isEmail, minAge } from "@/utils/validation";
+import { isEmail } from "@/utils/validation";
 
 export default function GuestDetailsForm({ value, onChange }) {
   const v = value || {};
   const emailValid = isEmail(v.email);
-  const dobValid = v.dob ? minAge(v.dob, 25) : true;
+  const ageValid = v.age ? Number(v.age) >= 21 : true;
 
   const titles = useMemo(() => ["Mr.", "Ms.", "Mrs.", "Dr."], []);
 
@@ -57,9 +57,9 @@ export default function GuestDetailsForm({ value, onChange }) {
       <div className={styles.rowGroup}>
         <div className={styles.colHalf}>
           <div className={styles.formRow}>
-            <label>Date of Birth</label>
-            <input className={styles.input} type="date" value={v.dob} onChange={(e) => onChange({ ...v, dob: e.target.value })} />
-            {v.dob && !dobValid && <div className={styles.errorSmall}>Minimum age is 25</div>}
+            <label>Age</label>
+            <input className={styles.input} type="number" min={21} value={v.age || ""} onChange={(e) => onChange({ ...v, age: e.target.value })} />
+            {v.age && !ageValid && <div className={styles.errorSmall}>Minimum age is 21</div>}
           </div>
         </div>
         <div className={styles.colHalf}>

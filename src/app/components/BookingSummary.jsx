@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import styles from "@/app/checkout/checkout.module.css";
+import { calculatePetFee } from "@/utils/calculatePetFee";
 
 /**
  * BookingSummary Component
@@ -32,6 +33,14 @@ export default function BookingSummary({
   const money = (v) => {
     const n = Number(v) || 0;
     return `US$${n.toFixed(2)}`;
+  };
+
+  // Parse various number-like values (strings with symbols) into a number
+  const toNum = (v) => {
+    if (v == null) return 0;
+    const s = String(v).replace(/[^0-9.\-]/g, "");
+    const n = parseFloat(s);
+    return Number.isFinite(n) ? n : 0;
   };
 
   // Calculate number of nights between check-in and check-out
@@ -67,21 +76,11 @@ export default function BookingSummary({
     // Total fees from quote
     const totalFees = Number(quote?.fees ?? quote?.total_fees ?? quote?.fees_net ?? 0);
     
-    // Pet fee (derive from computedPetFee or fee items when pets > 0)
+    // Pet fee per business rules (same for 1 or 2 pets, tiered by nights)
     let petFee = 0;
     if (Number(pets) > 0) {
-      petFee = Number(quote?.computedPetFee || 0) || 0;
-      if (!petFee) {
-        try {
-          const raw = quote?.fee_items || quote?.fees_items || quote?.fees_breakdown || [];
-          const list = Array.isArray(raw) ? raw : Object.values(raw || {});
-          for (const f of list) {
-            const title = (f?.title || f?.name || '').toLowerCase();
-            const amount = Number(f?.value || f?.amount || 0) || 0;
-            if (title.includes('pet')) { petFee = amount; break; }
-          }
-        } catch {}
-      }
+      const pf = calculatePetFee(nights, Number(pets));
+      petFee = Number.isNaN(pf) ? 0 : pf;
     }
 
     // Cleaning fee (flat): show only $100, ignore other fee items

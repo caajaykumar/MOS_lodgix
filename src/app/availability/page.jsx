@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import SearchForm from './components/SearchForm';
 import ResultsGrid from './components/ResultsGrid';
 import Breadcrumb from '../components/Breadcrumb/Breadcrumb';
@@ -11,6 +11,7 @@ import { useLoader } from '@/app/components/LoaderProvider';
 function SearchPageContent() {
   const { hideLoader } = useLoader();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [searchResults, setSearchResults] = useState({
     properties: [],
     loading: false,
@@ -18,6 +19,7 @@ function SearchPageContent() {
     searchCriteria: {}
   });
   const [aborter, setAborter] = useState(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
   // Extract search parameters from URL
   const from_date = searchParams.get('from_date') || searchParams.get('checkIn');
@@ -42,6 +44,7 @@ function SearchPageContent() {
         availablePropertyIds: [],
         totalFound: 0,
       });
+      setHasSearched(false);
       return;
     }
 
@@ -51,6 +54,7 @@ function SearchPageContent() {
       error: null,
       searchCriteria: criteria
     }));
+    setHasSearched(true);
 
     // Abort any in-flight request
     if (aborter) aborter.abort();
@@ -104,6 +108,23 @@ function SearchPageContent() {
     }
   };
 
+  // Reset search criteria and results, used by "Clear Search" button
+  const handleResetSearch = () => {
+    try { sessionStorage.removeItem('lodgix_search_criteria'); } catch {}
+    setSearchResults({
+      properties: [],
+      loading: false,
+      error: null,
+      searchCriteria: {},
+      availablePropertyIds: [],
+      totalFound: 0,
+    });
+    setHasSearched(false);
+    // Notify child filters to clear their local UI state (dates, guests)
+    try { if (typeof window !== 'undefined') window.dispatchEvent(new Event('lodgix:clear_filters')); } catch {}
+    try { router.replace('/availability', { scroll: false }); } catch {}
+  };
+
   useEffect(() => {
     if (from_date && to_date) {
       const criteria = {
@@ -114,6 +135,9 @@ function SearchPageContent() {
         pets: String(Number.isFinite(pets) ? Math.max(0, pets) : 0),
       };
       performSearch(criteria);
+    } else {
+      // Fresh page load without criteria should be in initial (not searched) state
+      setHasSearched(false);
     }
     // Page mounted: ensure header-triggered loader is cleared
     try { hideLoader(300); } catch {}
@@ -157,7 +181,7 @@ function SearchPageContent() {
       <div className="container">
         <div className="row">
           <div className="col-md-12">
-          <div className="text-center" style={{ marginBottom: '30px', marginTop: '30px' }}>
+          <div className="text-center" style={{ marginBottom: '5px', marginTop: '30px' }}>
             <h1>Find Your Perfect Stay</h1>
             <p className="text-muted">
               Search available properties using MyOrlandoStay availability system
@@ -183,6 +207,8 @@ function SearchPageContent() {
             loading={searchResults.loading}
             error={searchResults.error}
             searchCriteria={searchResults.searchCriteria}
+            hasSearched={hasSearched}
+            onReset={handleResetSearch}
           />
 
           {/* Debug Information hidden */}

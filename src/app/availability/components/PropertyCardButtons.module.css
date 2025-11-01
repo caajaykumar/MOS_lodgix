@@ -1,0 +1,78 @@
+.buttonContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 16px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  padding: 5px 5px;
+  border: 1px solid transparent;
+  border-radius: 10px; /* pill */
+  background: #e0e7ff; /* indigo-100 */
+  color: #1d4ed8; /* brand blue */
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.12);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+.btnSecondary:hover {
+  background: #c7d2fe; /* indigo-200 */
+  border-color: #93c5fd; /* blue-300 */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(29, 78, 216, 0.18);
+}
+.btnSecondary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.35);
+}
+
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1px; /* match secondary */
+  width: 100%;
+  padding: 5px 5px; /* match secondary */
+  border: 1px solid transparent; /* match secondary */
+  border-radius: 10px; /* match secondary */
+  background: #fef3c7; /* amber-100 */
+  color: #9a3412; /* dark amber text */
+  font-weight: 600;
+  box-shadow: 0 6px 12px rgba(245, 158, 11, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, filter 0.2s ease;
+  cursor: pointer;
+}
+.btnPrimary:hover {
+  background: #fde68a; /* amber-200 */
+  box-shadow: 0 12px 20px rgba(245, 158, 11, 0.45);
+  transform: scale(1.05);
+}
+.btnPrimary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.45);
+}
+.btnPrimary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btnIcon {
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  color: inherit; /* ensure SVG using currentColor matches text color */
+}
+
+@media (max-width: 640px) {
+  .buttonContainer {
+    flex-direction: column;
+  }
+}

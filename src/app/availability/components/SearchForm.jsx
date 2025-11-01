@@ -1,7 +1,9 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/dist/style.css';
 
 export default function SearchForm({ initialValues = {}, onSearch, isLoading = false }) {
   const router = useRouter();
@@ -18,14 +20,31 @@ export default function SearchForm({ initialValues = {}, onSearch, isLoading = f
   const [rooms, setRooms] = useState(initialValues.rooms || 1);
   const [pets, setPets] = useState(initialValues.pets || 0);
   const [errors, setErrors] = useState({});
+  // DayPicker range state
+  const toDateObj = (s) => {
+    if (!s) return undefined;
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? undefined : d;
+  };
+  const [range, setRange] = useState({
+    from: toDateObj(initialValues.checkIn || initialValues.from_date || ''),
+    to: toDateObj(initialValues.checkOut || initialValues.to_date || ''),
+  });
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [activeField, setActiveField] = useState('from'); // 'from' | 'to'
+  const pickerWrapRef = useRef(null);
 
   // Update state when URL changes
   useEffect(() => {
     if (searchParams.has('from_date') || searchParams.has('checkIn')) {
-      setCheckIn(searchParams.get('from_date') || searchParams.get('checkIn'));
+      const ci = searchParams.get('from_date') || searchParams.get('checkIn');
+      setCheckIn(ci);
+      setRange((r) => ({ ...r, from: toDateObj(ci) }));
     }
     if (searchParams.has('to_date') || searchParams.has('checkOut')) {
-      setCheckOut(searchParams.get('to_date') || searchParams.get('checkOut'));
+      const co = searchParams.get('to_date') || searchParams.get('checkOut');
+      setCheckOut(co);
+      setRange((r) => ({ ...r, to: toDateObj(co) }));
     }
     if (searchParams.has('guests')) {
       setGuests(parseInt(searchParams.get('guests')));
@@ -38,6 +57,23 @@ export default function SearchForm({ initialValues = {}, onSearch, isLoading = f
       setPets(Number.isFinite(p) ? Math.max(0, p) : 0);
     }
   }, [searchParams]);
+
+  // Close popover on outside click / ESC
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (!pickerOpen) return;
+      if (pickerWrapRef.current && !pickerWrapRef.current.contains(e.target)) {
+        setPickerOpen(false);
+      }
+    };
+    const onKey = (e) => { if (e.key === 'Escape') setPickerOpen(false); };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [pickerOpen]);
 
   // Validation function
   const validateForm = () => {
@@ -101,48 +137,61 @@ export default function SearchForm({ initialValues = {}, onSearch, isLoading = f
   return (
     <form onSubmit={handleSubmit}>
       <div className="row">
-        {/* Check-in Date */}
-        <div className="col-md-3 col-sm-3">
-          <div className={`form-group ${errors.checkIn ? 'has-error' : ''}`}>
-            <label className="control-label">Check-in Date</label>
-            <input
-              type="date"
-              value={checkIn}
-              onChange={(e) => {
-                setCheckIn(e.target.value);
-                if (errors.checkIn) {
-                  setErrors(prev => ({ ...prev, checkIn: null }));
-                }
-              }}
-              min={today}
-              className="form-control"
-              disabled={isLoading}
-            />
-            {errors.checkIn && (
-              <span className="help-block">{errors.checkIn}</span>
+        {/* Dates */}
+        <div className="col-md-6 col-sm-6">
+          <div className={`form-group ${(errors.checkIn || errors.checkOut) ? 'has-error' : ''}`} ref={pickerWrapRef}>
+            <label className="control-label">Dates</label>
+            <div className="date-inputs-row">
+              <div className="date-input" onClick={() => { setActiveField('from'); setPickerOpen(true); }}>
+                <input
+                  type="text"
+                  readOnly
+                  className="form-control"
+                  value={range.from ? range.from.toLocaleDateString() : ''}
+                  placeholder="Check in"
+                />
+              </div>
+              <div className="date-input" onClick={() => { setActiveField('to'); setPickerOpen(true); }}>
+                <input
+                  type="text"
+                  readOnly
+                  className="form-control"
+                  value={range.to ? range.to.toLocaleDateString() : ''}
+                  placeholder="Check out"
+                />
+              </div>
+            </div>
+            {pickerOpen && (
+              <div className="popover-calendar">
+                <DayPicker
+                  mode="range"
+                  numberOfMonths={1}
+                  selected={range}
+                  defaultMonth={activeField === 'to' ? (range.to || range.from || new Date()) : (range.from || new Date())}
+                  onSelect={(r) => {
+                    // Ensure selection starts from active field
+                    const next = r || { from: undefined, to: undefined };
+                    setRange(next);
+                    const ci = next?.from ? next.from.toISOString().slice(0,10) : '';
+                    const co = next?.to ? next.to.toISOString().slice(0,10) : '';
+                    setCheckIn(ci);
+                    setCheckOut(co);
+                    if (errors.checkIn || errors.checkOut) {
+                      setErrors(prev => ({ ...prev, checkIn: null, checkOut: null }));
+                    }
+                    // Auto-close when both selected
+                    if (next.from && next.to) setPickerOpen(false);
+                  }}
+                  disabled={{ before: new Date(new Date().toDateString()) }}
+                />
+                <div className="popover-actions">
+                  <button type="button" className="btn btn-default btn-xs" onClick={() => { setRange({ from: undefined, to: undefined }); setCheckIn(''); setCheckOut(''); }}>Clear</button>
+                  <button type="button" className="btn btn-primary btn-xs" onClick={() => setPickerOpen(false)}>Done</button>
+                </div>
+              </div>
             )}
-          </div>
-        </div>
-
-        {/* Check-out Date */}
-        <div className="col-md-3 col-sm-3">
-          <div className={`form-group ${errors.checkOut ? 'has-error' : ''}`}>
-            <label className="control-label">Check-out Date</label>
-            <input
-              type="date"
-              value={checkOut}
-              onChange={(e) => {
-                setCheckOut(e.target.value);
-                if (errors.checkOut) {
-                  setErrors(prev => ({ ...prev, checkOut: null }));
-                }
-              }}
-              min={checkIn || today}
-              className="form-control"
-              disabled={isLoading}
-            />
-            {errors.checkOut && (
-              <span className="help-block">{errors.checkOut}</span>
+            {(errors.checkIn || errors.checkOut) && (
+              <span className="help-block">{errors.checkIn || errors.checkOut}</span>
             )}
           </div>
         </div>
@@ -321,6 +370,10 @@ export default function SearchForm({ initialValues = {}, onSearch, isLoading = f
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
+      `}</style>
+      <style jsx global>{`
+        .daypicker-wrapper { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 6px; }
+        .rdp { --rdp-accent-color: #f59e0b; }
       `}</style>
     </form>
   );
